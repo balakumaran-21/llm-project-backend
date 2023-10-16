@@ -1,0 +1,57 @@
+package com.inn.llm.Controller;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.inn.llm.model.License;
+import com.inn.llm.service.LicenseService;
+
+@RestController
+@CrossOrigin(origins = "*")
+@RequestMapping(path = "/license")
+public class LicenseController {
+	@Autowired
+	LicenseService service;
+	
+	@PostMapping("/addLicense")
+	public ResponseEntity<String> addlicense(@RequestBody Map<String,String> details) {
+		return service.addLicense(details);
+	}
+	
+	@PostMapping("/addLicenses/{n}")
+	public ResponseEntity<String> addlicenses(@RequestBody Map<String,String> details, @PathVariable int n){
+		return service.addLicenses(details, n);
+	}
+	
+	@GetMapping("/getAllLicenses")
+	public ResponseEntity<List<License>> getAllLicenses(){
+		return service.getAllLicenses();
+	}
+	
+	@GetMapping("/getLicense/{id}")
+	public ResponseEntity<License> getLicense(@PathVariable String id){
+		return service.getLicense(id);
+	}
+	
+	@PutMapping("/updateLicense")
+	public ResponseEntity<String> updateLicense(@RequestBody Map<String,String> details){
+		return service.updateLicense(details);
+	}
+	
+	@DeleteMapping("/deleteLicense/{id}")
+	public ResponseEntity<String> deletelicense(@PathVariable String id){
+		return service.deleteLicense(id);
+	}
+}
