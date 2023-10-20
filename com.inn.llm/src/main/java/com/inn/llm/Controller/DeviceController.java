@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.inn.llm.model.Device;
+import com.inn.llm.model.License;
 import com.inn.llm.service.DeviceService;
 
 @RestController
@@ -54,4 +55,20 @@ public class DeviceController {
 	public ResponseEntity<String> deleteDevice(@PathVariable String id){
 		return service.deleteDevice(id);
 	}
+	
+	@GetMapping("/getDevicenames")
+	public ResponseEntity<List<String>> getDeviceNames(){
+		return service.getDeviceNames();
+	}
+	
+	@GetMapping("/getUnAssignedDevices")
+	public ResponseEntity<List<Device>> getUnAssignedDevices(){
+		return service.getUnAssignedDevices();
+	}
+	
+	@GetMapping("/getLicense/{id}")
+	public ResponseEntity<License> getLicense(@PathVariable String id){
+		return service.getLicense(id);
+	}
+	
 }

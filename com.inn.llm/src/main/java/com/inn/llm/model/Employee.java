@@ -1,17 +1,21 @@
 package com.inn.llm.model;
 
-import java.io.Serializable; 
-
+import java.io.Serializable;
+import java.util.List;
 import java.util.Random;
 
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -46,4 +50,12 @@ public class Employee implements Serializable{
 	@Column(name = "status")
 	private String status;
 	
+	@JsonManagedReference
+	@OneToMany(mappedBy="employee")
+    private List<Device> devices;
+	
+	@JsonManagedReference
+	@OneToMany(mappedBy="employee")
+    private List<Software> softwares;
+
 }

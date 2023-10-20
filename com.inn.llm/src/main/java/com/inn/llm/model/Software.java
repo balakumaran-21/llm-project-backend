@@ -5,9 +5,18 @@ import java.sql.Date;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,6 +44,22 @@ public class Software {
 	@Column(name = "date_added")
 	private Date date_added;
 	
-	@Column(name = "emp_id")
-	private String emp_id;
+	@JsonBackReference 
+	@ManyToOne()
+	@JoinColumn(name="employee_id")
+	private Employee employee;
+	
+	@JsonManagedReference
+	@OneToOne(mappedBy = "software", cascade = CascadeType.ALL)
+    private License license;
+	
+	@Override
+	public String toString() {
+		return "Software [software_id=" + software_id + ", name=" + name + ", version=" + version + ", date_added="
+				+ date_added + "]";
+	}
+	
+	
+	
+	
 }

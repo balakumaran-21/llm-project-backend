@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.inn.llm.dao.LicenseDAO;
+import com.inn.llm.model.Device;
 import com.inn.llm.model.License;
+import com.inn.llm.model.Software;
 import com.inn.llm.service.LicenseService;
 
 @RestController
@@ -25,6 +28,8 @@ public class LicenseController {
 	@Autowired
 	LicenseService service;
 	
+	@Autowired
+	LicenseDAO licenseDAO;
 	@PostMapping("/addLicense")
 	public ResponseEntity<String> addlicense(@RequestBody Map<String,String> details) {
 		return service.addLicense(details);
@@ -54,4 +59,30 @@ public class LicenseController {
 	public ResponseEntity<String> deletelicense(@PathVariable String id){
 		return service.deleteLicense(id);
 	}
+	
+	@PostMapping("/assignSoftware")
+	public ResponseEntity<String> assignSoftware(@RequestBody Map<String,String> details){
+		return service.assignSoftware(details);
+	}
+	
+	@PostMapping("/assignDevice")
+	public ResponseEntity<String> assignDevice(@RequestBody Map<String,String> details){
+		return service.assignDevice(details);
+	}
+	
+	@GetMapping("/getSoftware/{id}")
+	public ResponseEntity<Software> getSoftware(@PathVariable String id){
+		return service.getSoftware(id);
+	}
+	
+	@GetMapping("/getDevice/{id}")
+	public ResponseEntity<Device> getDevice(@PathVariable String id){
+		return service.getDevice(id);
+	}
+	
+	@GetMapping("/getLicenseNames")
+	public ResponseEntity<List<String>> getLicenseNames(){
+		return service.getLicenseNames();
+	}
+	
 }

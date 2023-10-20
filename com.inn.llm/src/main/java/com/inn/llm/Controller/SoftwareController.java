@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.inn.llm.model.License;
 import com.inn.llm.model.Software;
 import com.inn.llm.service.SoftwareService;
 
@@ -54,5 +55,20 @@ public class SoftwareController {
 	@DeleteMapping("/deleteSoftware/{id}")
 	public ResponseEntity<String> deleteSoftware(@PathVariable String id){
 		return service.deleteSoftware(id);
+	}
+	
+	@GetMapping("/getSoftwareNames")
+	public ResponseEntity<List<String>> getSoftwareNames(){
+		return service.getSoftwareNames();
+	}
+	
+	@GetMapping("/getUnAssignedSoftwares")
+	public ResponseEntity<List<Software>> getUnAssignedSoftwares(){
+		return service.getUnAssignedSoftwares();
+	}
+	
+	@GetMapping("/getLicense/{id}")
+	public ResponseEntity<License> getLicense(@PathVariable String id){
+		return service.getLicense(id);
 	}
 }

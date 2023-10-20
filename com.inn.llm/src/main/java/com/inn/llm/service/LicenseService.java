@@ -1,6 +1,8 @@
 package com.inn.llm.service;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,10 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.inn.llm.dao.DeviceDAO;
 import com.inn.llm.dao.LicenseDAO;
+import com.inn.llm.dao.SoftwareDAO;
+import com.inn.llm.model.Device;
 import com.inn.llm.model.License;
+import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
 @Service
@@ -22,12 +29,22 @@ public class LicenseService {
 	@Autowired
 	LicenseDAO licenseDAO;
 	
+	@Autowired
+	DeviceDAO deviceDAO;
+	
+	@Autowired
+	SoftwareDAO softwareDAO;
+	
+	@Autowired
+	EmailSenderService mailService;
+	
 	public ResponseEntity<String> addLicense(Map<String,String> details){
 		Random random = new Random();
 		try {
 			License license = new License();
 			Integer id = random.nextInt(9999,99999);
-			license.setLicense_id(details.get("type").substring(0,4).toUpperCase()+id);
+			license.setLicense_id(details.get("name").substring(0,4).toUpperCase()+id);
+			license.setName(details.get("name"));
 			license.setType(details.get("type"));
 			license.setDate_issued(Date.valueOf(details.get("dateIssued")));
 			license.setExpiry_date(Date.valueOf(details.get("expiryDate")));
@@ -63,7 +80,8 @@ public class LicenseService {
 	public ResponseEntity<String> updateLicense(Map<String,String> details){
 		String id = details.get("id");
 		License license = licenseDAO.findById(id).orElse(null);
-		if(!Objects.isNull(license)) {
+		if(!Objects.isNull(license)) {	
+			license.setName(details.get("name"));
 			license.setType(details.get("type"));
 			license.setDate_issued(Date.valueOf(details.get("dateIssued")));
 			license.setExpiry_date(Date.valueOf(details.get("expiryDate")));
@@ -81,5 +99,148 @@ public class LicenseService {
 		}
 		return LLMUtils.getResponseEntity("License "+id+" doesn't exists", HttpStatus.OK);
 	}
+	
+	public ResponseEntity<Device> getDevice(String id){
+		License license = licenseDAO.findById(id).orElse(null);
+		return new ResponseEntity<Device>(license.getDevice(),HttpStatus.OK);
+	}
+	
+	public ResponseEntity<Software> getSoftware(String id){
+		License license = licenseDAO.findById(id).orElse(null);
+		return new ResponseEntity<Software>(license.getSoftware(),HttpStatus.OK);
+	}
+	
+	public ResponseEntity<String> assignDevice(Map<String,String> details){
+		String dev_id = details.get("dev_id");
+		String lic_id = details.get("lic_id");
+		License license = licenseDAO.findById(lic_id).orElse(null);
+		Device device = deviceDAO.findById(dev_id).orElse(null);
+		try {
+			if(!Objects.isNull(license) && !Objects.isNull(device)) {
+				if(license.getType().toLowerCase().equals("device")) {
+					if(Objects.isNull(license.getDevice())) {
+						license.setDevice(device);
+						licenseDAO.save(license);
+						return LLMUtils.getResponseEntity("License "+lic_id+" assigned to Device "+dev_id, HttpStatus.OK);						
+					}else {
+						return LLMUtils.getResponseEntity("License "+license.getLicense_id()+" is already assigned to Device"+license.getDevice().getDevice_id(), HttpStatus.OK);
+					}
+				}
+				else {
+					return LLMUtils.getResponseEntity("Can't assign device to this license type", HttpStatus.OK);
+				}
+			}else if(Objects.isNull(license)) {
+				return LLMUtils.getResponseEntity("License "+lic_id+" doesn't exist", HttpStatus.OK);
+			}else if(Objects.isNull(device)) {
+				return LLMUtils.getResponseEntity("Device "+dev_id+" doesn't exist", HttpStatus.OK);
+			}			
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return LLMUtils.getResponseEntity("Something went wrong", HttpStatus.OK);
+	}
+	
+	public ResponseEntity<String> assignSoftware(Map<String,String> details){
+		String lic_id = details.get("lic_id");
+		String sof_id = details.get("sof_id");
+		License license = licenseDAO.findById(lic_id).orElse(null);
+		Software software = softwareDAO.findById(sof_id).orElse(null);
+		try {
+			if(!Objects.isNull(license) && !Objects.isNull(software)) {
+				if(license.getType().toLowerCase().equals("software")) {
+					if(Objects.isNull(license.getSoftware())) {
+						license.setSoftware(software);
+						licenseDAO.save(license);
+						return LLMUtils.getResponseEntity("License "+lic_id+" assigned to software "+sof_id, HttpStatus.OK);						
+					}else {
+						return LLMUtils.getResponseEntity("License "+license.getLicense_id()+" is already assigned to software"+license.getSoftware().getSoftware_id(), HttpStatus.OK);
+					}
+				}
+				else {
+					return LLMUtils.getResponseEntity("Can't assign software to this license type", HttpStatus.OK);
+				}
+			}else if(Objects.isNull(license)) {
+				return LLMUtils.getResponseEntity("License "+lic_id+" doesn't exist", HttpStatus.OK);
+			}else if(Objects.isNull(software)) {
+				return LLMUtils.getResponseEntity("Software "+sof_id+" doesn't exist", HttpStatus.OK);
+			}			
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return LLMUtils.getResponseEntity("Something went wrong", HttpStatus.OK);
+	}
+	
+	
+	
+	public ResponseEntity<List<String>> getLicenseNames() {
+		return new ResponseEntity<List<String>>(licenseDAO.getLicenseNames(),HttpStatus.OK);
+	}
+	
+	
+	@Scheduled(cron = "0 15 10 * * *")
+	public void sendLicenseStatus() {
+		List<License> licenses = licenseDAO.findAll();
+		for(License license:licenses) {
+			LocalDate expDate = license.getExpiry_date().toLocalDate();
+			LocalDate curr_date = LocalDate.now();
+			int diff = Period.between(expDate, curr_date).getDays();
+			System.out.println("LICENSE ID: "+license.getLicense_id()+"\n"
+					+ "ASSOCIATED NAME: "+ license.getName()+"\n"
+					+ "Date Today: "+curr_date.toString()+"\n"
+					+ "Expiration Date: "+ expDate.toString()+"\n"
+					+ "Days Left: "+ diff+"\n");
+			if(diff <= 15) {
+				if(license.getType().equals("Software")) {
+					if(!Objects.isNull(license.getSoftware()) && !Objects.isNull(license.getSoftware().getEmployee())) {
+							String toMail = license.getSoftware().getEmployee().getEmail();
+							String name = license.getSoftware().getName();
+							String subject = "";
+							String body = "";
+							if(diff > 0) {
+								subject = license.getSoftware().getName() + " license expiring soon...";
+								body = "License "+ license.getLicense_id() +" associated with software "+name+" is about to expire in "+diff+" days. "
+										+ "Please check status and update as soon as posssible";								
+							}else if(diff == 0) {
+								subject = license.getSoftware().getName() + "'s license is expiring today";
+								body = "License "+ license.getLicense_id() +" associated with software "+name+" is about to expire in "+diff+" days. "
+										+ "Please check status and update as soon as posssible";
+							}else if(diff < 0) {
+								subject = license.getSoftware().getName() + "'s license has expired";
+								body = "License "+ license.getLicense_id() +" associated with software "+name+" has expired on "+license.getExpiry_date().toString()+" "
+										+ "Please renew license to use "+license.getSoftware().getName();
+							}
+							mailService.sendEmail(toMail, subject, body);
+							
+						}else {
+							System.out.println(license.getLicense_id()+": Either license not assigned to any software or software not assigned to any employee");
+						}
+				}else if(license.getType().equals("Device")) {
+					if(!Objects.isNull(license.getDevice()) && !Objects.isNull(license.getDevice().getEmployee())) {
+						String toMail = license.getDevice().getEmployee().getEmail();
+						String name = license.getDevice().getName();
+						String subject = "";
+						String body = "";
+						if(diff > 0) {
+							subject = license.getDevice().getName() + " license expiring soon...";
+							body = "License "+ license.getLicense_id() +" associated with device "+name+" is about to expire in "+diff+" days. "
+									+ "Please check status and update as soon as posssible";								
+						}else if(diff == 0) {
+							subject = license.getDevice().getName() + "'s license is expiring today";
+							body = "License "+ license.getLicense_id() +" associated with device "+name+" is about to expire in "+diff+" days. "
+									+ "Please check status and update as soon as posssible";
+						}else if(diff < 0) {
+							subject = license.getDevice().getName() + "'s license has expired";
+							body = "License "+ license.getLicense_id() +" associated with device "+name+" has expired on "+license.getExpiry_date().toString()+" "
+									+ "Please renew license to use "+license.getDevice().getName();
+						}
+						mailService.sendEmail(toMail, subject, body);
+					}else {
+						System.out.println(license.getLicense_id()+": Either license not assigned to any device or device not assigned to any employee");
+					}
+				}				
+			}
+		}
+	}
+	
 	
 }

@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,9 @@ import org.springframework.stereotype.Service;
 
 import com.inn.llm.dao.DeviceDAO;
 import com.inn.llm.model.Device;
+import com.inn.llm.model.Employee;
+import com.inn.llm.model.License;
+import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
 @Service
@@ -25,8 +29,7 @@ public class DeviceService {
 	@Autowired
 	DeviceDAO deviceDAO;
 	
-	public ResponseEntity<String> addDevice(Map<String,String> details){
-		  
+	public ResponseEntity<String> addDevice(Map<String,String> details){  
 		Random rand = new Random();
 		try {
 			Integer id = rand.nextInt(999,9999);
@@ -35,10 +38,9 @@ public class DeviceService {
 			device.setCategory(details.get("category"));
 			device.setName(details.get("name"));
 			device.setType(details.get("type"));
-			device.setDevice_id( (details.get("category").substring(0, 3).toUpperCase()) + id.toString());
+			device.setDevice_id( (details.get("type").substring(0, 3).toUpperCase()) + id.toString());
 			device.setDate_added(Date.valueOf(date));
 			deviceDAO.save(device);
-			
 			return LLMUtils.getResponseEntity("Product "+id+" added", HttpStatus.OK);			
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -90,4 +92,25 @@ public class DeviceService {
 		return LLMUtils.getResponseEntity("ID doesn't exist", HttpStatus.OK);
 	}
 	
+	public ResponseEntity<List<String>> getDeviceNames() {
+		return new ResponseEntity<List<String>>(deviceDAO.getDeviceNames(),HttpStatus.OK);
+	}
+	
+	public ResponseEntity<List<Device>> getUnAssignedDevices(){
+		List<Device> devList = new ArrayList<Device>();
+		deviceDAO.findAll().forEach((Device device) -> {
+			if(Objects.isNull(device.getEmployee())) {
+				devList.add(device);
+			}
+		});
+		return new ResponseEntity<List<Device>>(devList,HttpStatus.OK);
+	}
+	
+	public ResponseEntity<License> getLicense(String id){
+		Device device = deviceDAO.findById(id).orElse(null);
+		if(!Objects.isNull(device)) {
+			return new ResponseEntity<License>(device.getLicense(),HttpStatus.OK);
+		}
+		return null;
+	}
 }

@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.inn.llm.dao.SoftwareDAO;
+import com.inn.llm.model.Device;
+import com.inn.llm.model.License;
 import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
@@ -97,5 +99,27 @@ public class SoftwareService {
 			ex.printStackTrace();
 		}
 		return LLMUtils.getResponseEntity("Something went wrong", HttpStatus.OK);
+	}
+	
+	public ResponseEntity<List<String>> getSoftwareNames() {
+		return new ResponseEntity<List<String>>(softwareDAO.getSoftwareNames(),HttpStatus.OK);
+	}
+
+	public ResponseEntity<List<Software>> getUnAssignedSoftwares(){
+		List<Software> softwareList = new ArrayList<Software>();
+		softwareDAO.findAll().forEach((Software software) -> {
+			if(Objects.isNull(software.getEmployee())) {
+				softwareList.add(software);
+			}
+		});
+		return new ResponseEntity<List<Software>>(softwareList,HttpStatus.OK);
+	}
+	
+	public ResponseEntity<License> getLicense(String id){
+		Software software = softwareDAO.findById(id).orElse(null);
+		if(!Objects.isNull(software)) {
+			return new ResponseEntity<License>(software.getLicense(),HttpStatus.OK);
+		}
+		return null;
 	}
 }
