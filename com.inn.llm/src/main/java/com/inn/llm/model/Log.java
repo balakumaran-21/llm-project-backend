@@ -1,9 +1,7 @@
 package com.inn.llm.model;
 
 import java.sql.Date;
-import java.sql.Time;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -21,15 +19,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "emails_sent")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@AllArgsConstructor
-@NoArgsConstructor
-public class EmailsSent {
+@Table(name = "log")
+public class Log{
+	
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private int id;
 	
@@ -39,12 +38,7 @@ public class EmailsSent {
 	@Column(name = "time")
 	private String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
 	
-	@Column(name = "to_mail")
-	private String to_mail;
+	@Column(name = "log_entry")
+	private String log_entry;
 	
-	@Column(name = "subject")
-	private String subject;
-	
-	@Column(name = "body")
-	private String body;
 }

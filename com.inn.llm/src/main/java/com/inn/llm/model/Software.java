@@ -44,12 +44,12 @@ public class Software {
 	@Column(name = "date_added")
 	private Date date_added;
 	
-	@JsonBackReference 
+	@JsonBackReference(value="emp-software")
 	@ManyToOne()
 	@JoinColumn(name="employee_id")
 	private Employee employee;
 	
-	@JsonManagedReference
+	@JsonManagedReference(value = "software-license")
 	@OneToOne(mappedBy = "software", cascade = CascadeType.ALL)
     private License license;
 	

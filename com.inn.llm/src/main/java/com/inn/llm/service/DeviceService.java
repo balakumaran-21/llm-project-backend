@@ -17,9 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.inn.llm.dao.DeviceDAO;
+import com.inn.llm.dao.LogDAO;
 import com.inn.llm.model.Device;
 import com.inn.llm.model.Employee;
 import com.inn.llm.model.License;
+import com.inn.llm.model.Log;
 import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
@@ -29,6 +31,8 @@ public class DeviceService {
 	@Autowired
 	DeviceDAO deviceDAO;
 	
+	@Autowired
+	LogDAO logdao;
 	public ResponseEntity<String> addDevice(Map<String,String> details){  
 		Random rand = new Random();
 		try {
@@ -41,6 +45,8 @@ public class DeviceService {
 			device.setDevice_id( (details.get("type").substring(0, 3).toUpperCase()) + id.toString());
 			device.setDate_added(Date.valueOf(date));
 			deviceDAO.save(device);
+			Log log = new Log();
+			log.setLog_entry("A new"+device.getName()+" with id: "+device.getDevice_id()+" added");
 			return LLMUtils.getResponseEntity("Product "+id+" added", HttpStatus.OK);			
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -54,6 +60,8 @@ public class DeviceService {
 			addDevice(details);
 			count++;			
 		}
+		Log log = new Log();
+		log.setLog_entry(count +" new "+details.get("name")+"are added");
 		return LLMUtils.getResponseEntity("Added "+count+" "+details.get("name")+" devices", HttpStatus.OK);
 	}
 	
@@ -78,6 +86,9 @@ public class DeviceService {
 			device.setDate_added(Date.valueOf(details.get("date_added")));
 			System.out.println("Date Added: "+device.getDate_added());
 			deviceDAO.save(device);
+			Log log = new Log();
+			log.setLog_entry(device.getName()+"id: "+device.getDevice_id()+" details was updated");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Device "+id+" details updated",HttpStatus.OK);
 		}
 		return LLMUtils.getResponseEntity("ID doesn't exists",HttpStatus.OK);
@@ -87,6 +98,9 @@ public class DeviceService {
 		Device device = deviceDAO.findById(id).orElse(null);
 		if(!Objects.isNull(device)) {
 			deviceDAO.deleteById(id);
+			Log log = new Log();
+			log.setLog_entry(device.getName()+"id: "+id+" was deleted");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Device "+id+" deleted successfully ", HttpStatus.OK);
 		}
 		return LLMUtils.getResponseEntity("ID doesn't exist", HttpStatus.OK);

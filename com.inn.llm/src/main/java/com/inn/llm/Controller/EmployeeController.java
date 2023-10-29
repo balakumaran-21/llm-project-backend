@@ -3,6 +3,7 @@ package com.inn.llm.Controller;
 import java.util.List;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import org.json.JSONObject;
@@ -133,7 +134,6 @@ public class EmployeeController{
 		int z=rand.nextInt(y-x+1)+x;
 		message.setText(String.valueOf(z));
 		message.setSubject("Otp for your Login process");
-		message.setFrom("travelstour40@gmail.com");
 		mailsender.send(message);
 		return z;
 	}

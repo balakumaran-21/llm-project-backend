@@ -50,11 +50,11 @@ public class Employee implements Serializable{
 	@Column(name = "status")
 	private String status;
 	
-	@JsonManagedReference
+	@JsonManagedReference(value="emp-device")
 	@OneToMany(mappedBy="employee")
     private List<Device> devices;
 	
-	@JsonManagedReference
+	@JsonManagedReference(value="emp-software")
 	@OneToMany(mappedBy="employee")
     private List<Software> softwares;
 

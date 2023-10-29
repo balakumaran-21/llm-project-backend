@@ -12,9 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.inn.llm.dao.LogDAO;
 import com.inn.llm.dao.SoftwareDAO;
 import com.inn.llm.model.Device;
 import com.inn.llm.model.License;
+import com.inn.llm.model.Log;
 import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
@@ -23,6 +25,9 @@ public class SoftwareService {
 
 	@Autowired
 	SoftwareDAO softwareDAO;
+	
+	@Autowired
+	LogDAO logdao;
 	
 	public ResponseEntity<String> addSoftware(Map<String,String> details){
 		Random rand = new Random();
@@ -33,7 +38,10 @@ public class SoftwareService {
 			software.setName(details.get("name"));
 			software.setVersion(details.get("version"));
 			software.setDate_added(Date.valueOf(details.get("dateAdded")));
-			softwareDAO.save(software);			
+			softwareDAO.save(software);
+			Log log = new Log();
+			log.setLog_entry("A new "+software.getName()+" with id: "+software.getSoftware_id()+" was added");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Software "+software.getSoftware_id()+" added successfully", HttpStatus.OK);
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -46,6 +54,9 @@ public class SoftwareService {
 			for(int i= 0; i < noOfSoftwares; i++) {
 				addSoftware(details);			
 			}
+			Log log = new Log();
+			log.setLog_entry(noOfSoftwares+" new "+details.get("name")+" was added");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Added "+noOfSoftwares+" new "+details.get("name")+" softwares", HttpStatus.OK);		
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -79,6 +90,9 @@ public class SoftwareService {
 			software.setVersion(details.get("version"));
 			software.setDate_added(Date.valueOf(details.get("dateAdded")));
 			softwareDAO.save(software);			
+			Log log = new Log();
+			log.setLog_entry(software.getName()+"id: "+software.getSoftware_id()+" details was updated");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Software "+software.getSoftware_id()+" details updated successfully", HttpStatus.OK);
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -92,6 +106,9 @@ public class SoftwareService {
 			Software software = softwareDAO.findById(id).orElse(null);
 			if(!Objects.isNull(software)) {
 				softwareDAO.deleteById(id);
+				Log log = new Log();
+				log.setLog_entry(software.getName()+"id: "+software.getSoftware_id()+" was deleted");
+				logdao.save(log);
 				return LLMUtils.getResponseEntity("Software "+id+" deleted successfully", HttpStatus.OK);
 			}
 			return LLMUtils.getResponseEntity("Software "+id+" doesn't exist", HttpStatus.OK);
@@ -122,4 +139,13 @@ public class SoftwareService {
 		}
 		return null;
 	}
+	
+	public ResponseEntity<Integer> isLicenseAssigned(String id){
+		Software software = softwareDAO.findById(id).orElse(null);
+		if(!Objects.isNull(software)) {
+			return new ResponseEntity<Integer>(1,HttpStatus.OK);
+		}
+		return new ResponseEntity<Integer>(0,HttpStatus.OK);
+	}
+	
 }

@@ -20,9 +20,11 @@ import org.springframework.stereotype.Service;
 import com.inn.llm.dao.DeviceDAO;
 import com.inn.llm.dao.EmployeeDAO;
 import com.inn.llm.dao.LicenseDAO;
+import com.inn.llm.dao.LogDAO;
 import com.inn.llm.dao.SoftwareDAO;
 import com.inn.llm.model.Device;
 import com.inn.llm.model.Employee;
+import com.inn.llm.model.Log;
 import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
@@ -44,12 +46,23 @@ public class EmployeeService{
 	@Autowired
 	EmailSenderService sendMails;
 	
+	@Autowired
+	LogDAO logdao;
+	
 	public Employee addEmployee(Employee employee) {
 		Random random = new Random();
 		Integer id = random.nextInt(10000,99999);
 		employee.setEmployee_id(id.toString());
 		String status = (employee.getRole().equals("Admin"))?"true":"false";
 		employee.setStatus(status);
+		
+		Log log = new Log();
+		if(employee.getRole().equals("Admin")) {
+			log.setLog_entry("New admin "+employee.getName()+" signed up");
+		}else {
+			log.setLog_entry("A new employee "+employee.getName()+" was added");
+		}
+		logdao.save(log);
 		return employeeDAO.save(employee);
 	}
 	
@@ -76,19 +89,25 @@ public class EmployeeService{
 	public ResponseEntity<String> login(String id, String password){
 		Optional<Employee> employeeByID = employeeDAO.findById(id);
 		Employee employeeByEmail  = employeeDAO.findByEmailId(id);
+		Log log = new Log();
 		if(!employeeByID.isEmpty()) {
 			if(employeeByID.get().getEmployee_id().equals(id)
-					&& employeeByID.get().getPassword().equals(password))
+					&& employeeByID.get().getPassword().equals(password)) {
+				log.setLog_entry("Employee "+employeeByID+" logged in using ID: "+employeeByID.get().getEmployee_id());
+				logdao.save(log);
 				return LLMUtils.getResponseEntity("empid",HttpStatus.OK);
-			else
-				return LLMUtils.getResponseEntity("empid password",HttpStatus.OK);
+			}				
+			else {
+				return LLMUtils.getResponseEntity("empid password",HttpStatus.OK);				
+			}
 		}else if(!Objects.isNull(employeeByEmail)) {
 			if(employeeByEmail.getEmail().equals(id)
 					&& employeeByEmail.getPassword().equals(password)) {
+			log.setLog_entry("Employee "+employeeByID+" logged in using Email ID: "+employeeByEmail.getEmail());
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("email",HttpStatus.OK);}	
 			else
 				return LLMUtils.getResponseEntity("email password", HttpStatus.OK);
-			
 		}		
 		return LLMUtils.getResponseEntity("Email or Employee ID doesn't exist", HttpStatus.OK);
 	}
@@ -111,6 +130,9 @@ public class EmployeeService{
 		employee.setStatus(status);
 		employeeDAO.save(employee);
 		String loginStatus = (status.equals("true"))?" can login":" access denied";
+		Log log = new Log();
+		log.setLog_entry((status.equals("true"))?"Employee "+id+" was given access to login":"Employee "+id+" was denied access to login");
+		logdao.save(log);
 		return LLMUtils.getResponseEntity("Employee "+id+" "+loginStatus, HttpStatus.OK);
 	}
 	
@@ -135,14 +157,11 @@ public class EmployeeService{
 			employee.setEmail(updateDetails.get("email"));
 			employee.setRole(updateDetails.get("role"));
 			employeeDAO.save(employee);	
+			Log log = new Log();
+			log.setLog_entry("Employee "+updateDetails.get("id")+"  details was updated");
 			return LLMUtils.getResponseEntity("Employee "+employee.getEmployee_id()+" details updated", HttpStatus.OK);
 		}
 		return LLMUtils.getResponseEntity("Employee with ID: "+employee.getEmployee_id()+" doesn't exist", HttpStatus.OK);
-	}
-	
-	@Scheduled(cron="0 0 10 * *  *")
-	public void sendMail() {
-		sendMails.sendEmail("balakumaran.ma@mailinator.com", "Hello", "Test mail sent");
 	}
 	
 	public ResponseEntity<List<Map<String,String>>> fetchAllEmployees(){
@@ -166,6 +185,20 @@ public class EmployeeService{
 	public ResponseEntity<String>deleteEmployee(String id){
 		Employee employee = employeeDAO.findById(id).orElse(null);
 		if(!Objects.isNull(employee)) {
+			List<Device> devices = employee.getDevices();
+			List<Software> softwares = employee.getSoftwares();
+			if(!employee.getDevices().isEmpty()){
+				for(Device dev:devices) {
+					dev.setEmployee(null);
+				}
+			}
+			if(!employee.getSoftwares().isEmpty()) {
+				for(Software sof:softwares) {
+					sof.setEmployee(null);
+				}
+			}
+			Log log = new Log();
+			log.setLog_entry("Employee "+id+" was deleted");
 			employeeDAO.delete(employee);
 			return LLMUtils.getResponseEntity("Employee "+id+" deleted", HttpStatus.OK);
 		}
@@ -198,7 +231,10 @@ public class EmployeeService{
 				}
 				if(Objects.isNull(device.getEmployee())) {
 					device.setEmployee(employee);
-					deviceDAO.save(device);					
+					deviceDAO.save(device);
+					Log log = new Log();
+					log.setLog_entry("A new "+device.getName()+" with id: "+device.getDevice_id()+" was assigned to Employe "+emp_id);
+					logdao.save(log);
 					return LLMUtils.getResponseEntity("Device "+dev_id+" assigned to Employee "+emp_id,HttpStatus.OK);
 				}else {
 					return LLMUtils.getResponseEntity("This "+device.getType()+" is already assigned to "+device.getEmployee().getName(),HttpStatus.OK);
@@ -228,7 +264,10 @@ public class EmployeeService{
 				}
 				if(Objects.isNull(software.getEmployee())) {
 					software.setEmployee(employee);
-					softwareDAO.save(software);					
+					softwareDAO.save(software);	
+					Log log = new Log();
+					log.setLog_entry("A new "+software.getName()+" with id: "+software.getSoftware_id()+" was assigned to Employe "+emp_id);
+					logdao.save(log);
 					return LLMUtils.getResponseEntity("Software "+sof_id+" assigned to Employee "+emp_id,HttpStatus.OK);
 				}
 			}

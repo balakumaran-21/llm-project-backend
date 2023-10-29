@@ -18,9 +18,11 @@ import org.springframework.stereotype.Service;
 
 import com.inn.llm.dao.DeviceDAO;
 import com.inn.llm.dao.LicenseDAO;
+import com.inn.llm.dao.LogDAO;
 import com.inn.llm.dao.SoftwareDAO;
 import com.inn.llm.model.Device;
 import com.inn.llm.model.License;
+import com.inn.llm.model.Log;
 import com.inn.llm.model.Software;
 import com.inn.llm.utils.LLMUtils;
 
@@ -38,6 +40,9 @@ public class LicenseService {
 	@Autowired
 	EmailSenderService mailService;
 	
+	@Autowired
+	LogDAO logdao;
+	
 	public ResponseEntity<String> addLicense(Map<String,String> details){
 		Random random = new Random();
 		try {
@@ -49,6 +54,9 @@ public class LicenseService {
 			license.setDate_issued(Date.valueOf(details.get("dateIssued")));
 			license.setExpiry_date(Date.valueOf(details.get("expiryDate")));
 			licenseDAO.save(license);
+			Log log = new Log();
+			log.setLog_entry("A new "+license.getName()+" with id: "+license.getLicense_id()+" was added");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Added new "+id+" license", HttpStatus.OK);
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -61,6 +69,9 @@ public class LicenseService {
 			for(int i = 0; i < noOfLicenses; i++) {
 				addLicense(details);
 			}
+			Log log = new Log();
+			log.setLog_entry(noOfLicenses+" new "+details.get("name")+" added");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("Added "+noOfLicenses+" new "+details.get("type")+" licenses", HttpStatus.OK);
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -86,6 +97,9 @@ public class LicenseService {
 			license.setDate_issued(Date.valueOf(details.get("dateIssued")));
 			license.setExpiry_date(Date.valueOf(details.get("expiryDate")));
 			licenseDAO.save(license);
+			Log log = new Log();
+			log.setLog_entry(license.getName()+" with id: "+license.getLicense_id()+" details was updated");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("License "+id+" details updated", HttpStatus.OK);
 		}
 		return LLMUtils.getResponseEntity("License "+id+" doesn't exists", HttpStatus.OK);
@@ -95,6 +109,9 @@ public class LicenseService {
 		License license = licenseDAO.findById(id).orElse(null);
 		if(!Objects.isNull(license)) {
 			licenseDAO.deleteById(id);
+			Log log = new Log();
+			log.setLog_entry(license.getName()+" with id: "+license.getLicense_id()+" was deleted");
+			logdao.save(log);
 			return LLMUtils.getResponseEntity("License "+id+" deleted", HttpStatus.OK);
 		}
 		return LLMUtils.getResponseEntity("License "+id+" doesn't exists", HttpStatus.OK);
@@ -121,6 +138,9 @@ public class LicenseService {
 					if(Objects.isNull(license.getDevice())) {
 						license.setDevice(device);
 						licenseDAO.save(license);
+						Log log = new Log();
+						log.setLog_entry("License "+lic_id+" assigned to "+device.getName()+" id: "+dev_id);
+						logdao.save(log);
 						return LLMUtils.getResponseEntity("License "+lic_id+" assigned to Device "+dev_id, HttpStatus.OK);						
 					}else {
 						return LLMUtils.getResponseEntity("License "+license.getLicense_id()+" is already assigned to Device"+license.getDevice().getDevice_id(), HttpStatus.OK);
@@ -130,7 +150,7 @@ public class LicenseService {
 					return LLMUtils.getResponseEntity("Can't assign device to this license type", HttpStatus.OK);
 				}
 			}else if(Objects.isNull(license)) {
-				return LLMUtils.getResponseEntity("License "+lic_id+" doesn't exist", HttpStatus.OK);
+				return LLMUtils.getResponseEntity("License id: "+lic_id+" doesn't exist", HttpStatus.OK);
 			}else if(Objects.isNull(device)) {
 				return LLMUtils.getResponseEntity("Device "+dev_id+" doesn't exist", HttpStatus.OK);
 			}			
@@ -151,6 +171,9 @@ public class LicenseService {
 					if(Objects.isNull(license.getSoftware())) {
 						license.setSoftware(software);
 						licenseDAO.save(license);
+						Log log = new Log();
+						log.setLog_entry("License id: "+lic_id+" assigned to "+software.getName()+" id: "+sof_id);
+						logdao.save(log);
 						return LLMUtils.getResponseEntity("License "+lic_id+" assigned to software "+sof_id, HttpStatus.OK);						
 					}else {
 						return LLMUtils.getResponseEntity("License "+license.getLicense_id()+" is already assigned to software"+license.getSoftware().getSoftware_id(), HttpStatus.OK);
@@ -177,7 +200,7 @@ public class LicenseService {
 	}
 	
 	
-	@Scheduled(cron = "0 15 10 * * *")
+	@Scheduled(cron = "0 0 13,17,20 * * *")
 	public void sendLicenseStatus() {
 		List<License> licenses = licenseDAO.findAll();
 		for(License license:licenses) {
@@ -210,7 +233,6 @@ public class LicenseService {
 										+ "Please renew license to use "+license.getSoftware().getName();
 							}
 							mailService.sendEmail(toMail, subject, body);
-							
 						}else {
 							System.out.println(license.getLicense_id()+": Either license not assigned to any software or software not assigned to any employee");
 						}

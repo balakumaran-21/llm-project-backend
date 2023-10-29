@@ -71,4 +71,10 @@ public class SoftwareController {
 	public ResponseEntity<License> getLicense(@PathVariable String id){
 		return service.getLicense(id);
 	}
+	
+	@GetMapping("/isLicenseAssigned/{id}")
+	public ResponseEntity<Integer> isLicenseAssigned(@PathVariable String id){
+		return service.isLicenseAssigned(id);
+	}
+	
 }

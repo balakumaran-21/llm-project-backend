@@ -50,12 +50,12 @@ public class Device {
 	@Column(name = "date_added")
 	private Date date_added; 
 	
-	@JsonBackReference 
-	@ManyToOne()
+	@JsonBackReference(value="emp-device")
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name="employee_id")
 	private Employee employee;
 	
-	@JsonManagedReference
+	@JsonManagedReference(value="device-license")
 	@OneToOne(mappedBy = "device", cascade = CascadeType.ALL)
     private License license;
 	
