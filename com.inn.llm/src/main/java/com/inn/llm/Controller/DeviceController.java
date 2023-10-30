@@ -66,6 +66,11 @@ public class DeviceController {
 		return service.getUnAssignedDevices();
 	}
 	
+	@GetMapping("/getUnLicensesdDevices")
+	public ResponseEntity<List<Device>>getUnLicensesdDevices(){
+		return service.getUnLicensesdDevices();
+	}
+	
 	@GetMapping("/getLicense/{id}")
 	public ResponseEntity<License> getLicense(@PathVariable String id){
 		return service.getLicense(id);

@@ -93,7 +93,7 @@ public class EmployeeService{
 		if(!employeeByID.isEmpty()) {
 			if(employeeByID.get().getEmployee_id().equals(id)
 					&& employeeByID.get().getPassword().equals(password)) {
-				log.setLog_entry("Employee "+employeeByID+" logged in using ID: "+employeeByID.get().getEmployee_id());
+				log.setLog_entry("Employee "+employeeByID.get().getName()+" logged in using ID: "+employeeByID.get().getEmployee_id());
 				logdao.save(log);
 				return LLMUtils.getResponseEntity("empid",HttpStatus.OK);
 			}				
@@ -103,7 +103,7 @@ public class EmployeeService{
 		}else if(!Objects.isNull(employeeByEmail)) {
 			if(employeeByEmail.getEmail().equals(id)
 					&& employeeByEmail.getPassword().equals(password)) {
-			log.setLog_entry("Employee "+employeeByID+" logged in using Email ID: "+employeeByEmail.getEmail());
+			log.setLog_entry("Employee "+employeeByEmail.getName()+" logged in using Email ID: "+employeeByEmail.getEmail());
 			logdao.save(log);
 			return LLMUtils.getResponseEntity("email",HttpStatus.OK);}	
 			else

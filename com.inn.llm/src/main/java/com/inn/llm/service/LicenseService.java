@@ -3,6 +3,7 @@ package com.inn.llm.service;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -160,6 +161,16 @@ public class LicenseService {
 		return LLMUtils.getResponseEntity("Something went wrong", HttpStatus.OK);
 	}
 	
+	public ResponseEntity<List<License>> getUnAssignedLicenses(){
+		List<License> list = new ArrayList<License>();
+		for(License l:licenseDAO.findAll()) {
+			if( Objects.isNull(l.getSoftware()) && Objects.isNull(l.getDevice()) ){
+				list.add(l);
+			}
+		}
+		return new ResponseEntity<List<License>>(list,HttpStatus.OK);
+	}
+	
 	public ResponseEntity<String> assignSoftware(Map<String,String> details){
 		String lic_id = details.get("lic_id");
 		String sof_id = details.get("sof_id");
@@ -200,7 +211,7 @@ public class LicenseService {
 	}
 	
 	
-	@Scheduled(cron = "0 0 13,17,20 * * *")
+	@Scheduled(cron = "0 0 16 * * *")
 	public void sendLicenseStatus() {
 		List<License> licenses = licenseDAO.findAll();
 		for(License license:licenses) {

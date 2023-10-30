@@ -120,6 +120,16 @@ public class DeviceService {
 		return new ResponseEntity<List<Device>>(devList,HttpStatus.OK);
 	}
 	
+	public ResponseEntity<List<Device>> getUnLicensesdDevices(){
+		List<Device> devList = new ArrayList<Device>();
+		deviceDAO.findAll().forEach((Device device) -> {
+			if(Objects.isNull(device.getLicense())) {
+				devList.add(device);
+			}
+		});
+		return new ResponseEntity<List<Device>>(devList,HttpStatus.OK);
+	}
+	
 	public ResponseEntity<License> getLicense(String id){
 		Device device = deviceDAO.findById(id).orElse(null);
 		if(!Objects.isNull(device)) {

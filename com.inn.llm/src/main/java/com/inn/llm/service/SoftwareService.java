@@ -132,6 +132,16 @@ public class SoftwareService {
 		return new ResponseEntity<List<Software>>(softwareList,HttpStatus.OK);
 	}
 	
+	public ResponseEntity<List<Software>> getUnLicensedSoftwares(){
+		List<Software> softwareList = new ArrayList<Software>();
+		softwareDAO.findAll().forEach((Software software) -> {
+			if(Objects.isNull(software.getLicense())) {
+				softwareList.add(software);
+			}
+		});
+		return new ResponseEntity<List<Software>>(softwareList,HttpStatus.OK);
+	}
+	
 	public ResponseEntity<License> getLicense(String id){
 		Software software = softwareDAO.findById(id).orElse(null);
 		if(!Objects.isNull(software)) {
@@ -140,12 +150,6 @@ public class SoftwareService {
 		return null;
 	}
 	
-	public ResponseEntity<Integer> isLicenseAssigned(String id){
-		Software software = softwareDAO.findById(id).orElse(null);
-		if(!Objects.isNull(software)) {
-			return new ResponseEntity<Integer>(1,HttpStatus.OK);
-		}
-		return new ResponseEntity<Integer>(0,HttpStatus.OK);
-	}
+	
 	
 }

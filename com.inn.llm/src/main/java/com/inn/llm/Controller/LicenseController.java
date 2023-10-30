@@ -85,4 +85,9 @@ public class LicenseController {
 		return service.getLicenseNames();
 	}
 	
+	@GetMapping("/getUnAssignedLicenses")
+	public ResponseEntity<List<License>> getUnAssignedLicenses(){
+		return service.getUnAssignedLicenses();
+	}
+	
 }
