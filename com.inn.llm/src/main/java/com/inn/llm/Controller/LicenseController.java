@@ -90,4 +90,18 @@ public class LicenseController {
 		return service.getUnAssignedLicenses();
 	}
 	
+	@GetMapping("/getRequests")
+	public ResponseEntity<List<License>> getRequests(){
+		return service.getRequests();
+	}
+	
+	@PostMapping("/raiseRequest/{id}")
+	public ResponseEntity<String> raiseRequest(@PathVariable String id){
+		return service.raiseRequest(id);
+	}
+	
+	@PostMapping("acceptRequest/{id}")
+	public ResponseEntity<String> acceptRequest(@PathVariable String id){
+		return service.acceptRequest(id);
+	}
 }

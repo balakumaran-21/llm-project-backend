@@ -42,6 +42,9 @@ public class License {
 	@Column(name="expiry_date")
 	private Date expiry_date;
 	
+	@Column(name="request")
+	private String request = "no";
+	
 	@JsonBackReference(value="software-license")
 	@OneToOne(optional = true)
 	@JoinColumn(name="software_id")
@@ -51,5 +54,5 @@ public class License {
 	@OneToOne(optional = true)
 	@JoinColumn(name ="device_id")
 	private Device device;
-	
+
 }

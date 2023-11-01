@@ -210,8 +210,86 @@ public class LicenseService {
 		return new ResponseEntity<List<String>>(licenseDAO.getLicenseNames(),HttpStatus.OK);
 	}
 	
+	public ResponseEntity<List<License>> getRequests(){
+		List<License> list = licenseDAO.findAll();
+		List<License> filterList = new ArrayList<>();
+		for(License l:list) {
+			if(l.getRequest().equals("yes")) {
+				filterList.add(l);
+			}
+		}
+		return new ResponseEntity<List<License>>(filterList,HttpStatus.OK);
+	}
 	
-	@Scheduled(cron = "0 0 16 * * *")
+	public ResponseEntity<String> raiseRequest(String id){
+		License l = licenseDAO.findById(id).orElse(null);
+		if(!Objects.isNull(l)) {
+			Log log = new Log();
+			if(l.getRequest().equals("no")) {
+				l.setRequest("yes");
+				log.setLog_entry("Renewal request raised by "+l.getSoftware().getEmployee().getName()+" for "+l.getName());
+				if(l.getType().equals("Software")) {
+					if(!Objects.isNull(l.getSoftware()) && !Objects.isNull(l.getSoftware().getEmployee())) {
+							String toMail = l.getSoftware().getEmployee().getEmail();
+							String name = l.getSoftware().getName();
+							String subject = "Renewal request raised";
+							String body = "The request for renewal of "+name+" license has been submitted wait for admin's approval";
+							mailService.sendEmail(toMail, subject, body);;
+					}
+				}
+				if(l.getType().equals("Device")) {
+					if(!Objects.isNull(l.getDevice()) && !Objects.isNull(l.getDevice().getEmployee())) {
+							String toMail = l.getDevice().getEmployee().getEmail();
+							String name = l.getDevice().getName();
+							String subject = "Renewal request raised";
+							String body = "The request for renewal of "+name+" license has been submitted wait for admin's approval";
+							mailService.sendEmail(toMail, subject, body);;
+					}
+				}
+				licenseDAO.save(l);
+				logdao.save(log);
+				return LLMUtils.getResponseEntity("Request raised successfully", HttpStatus.OK);
+			}
+			return LLMUtils.getResponseEntity("Request already raised", HttpStatus.OK);		
+		}
+		return LLMUtils.getResponseEntity("License doesn't exists", HttpStatus.OK);
+	}
+	
+	public ResponseEntity<String> acceptRequest(String id){
+		License l  = licenseDAO.findById(id).orElse(null);
+		if(!Objects.isNull(l)) {
+			l.setDate_issued(Date.valueOf(LocalDate.now()));
+			l.setExpiry_date(Date.valueOf(LocalDate.now().plusYears(1)));
+			l.setRequest("no");
+			Log log = new Log();
+			if(l.getType().equals("Software")) {
+				if(!Objects.isNull(l.getSoftware()) && !Objects.isNull(l.getSoftware().getEmployee())) {
+						String toMail = l.getSoftware().getEmployee().getEmail();
+						String name = l.getSoftware().getName();
+						String subject = "License Renewal Request Accepted";
+						String body = "The license renewal request for "+name+" software has been accepted and your license has been successfully renewed. "
+								+ "The new expiration date is set to one year from now";
+						mailService.sendEmail(toMail, subject, body);;
+				}
+			}
+			if(l.getType().equals("Device")) {
+				if(!Objects.isNull(l.getDevice()) && !Objects.isNull(l.getDevice().getEmployee())) {
+						String toMail = l.getDevice().getEmployee().getEmail();
+						String name = l.getDevice().getName();
+						String subject = "License Renewal Request Accepted";
+						String body = "The license renewal request for "+name+" software has been accepted and your license has been successfully renewed. "
+								+ "The new expiration date is set to one year from now";
+						mailService.sendEmail(toMail, subject, body);;
+				}
+			}
+			log.setLog_entry("License "+id+" renewed");
+			licenseDAO.save(l);
+			return LLMUtils.getResponseEntity("Renewal of license successfull", HttpStatus.OK);
+		}
+		return LLMUtils.getResponseEntity("License doesn't exists", HttpStatus.OK);
+	}
+	
+	@Scheduled(cron = "0 30 21 * * *")
 	public void sendLicenseStatus() {
 		List<License> licenses = licenseDAO.findAll();
 		for(License license:licenses) {
@@ -274,6 +352,5 @@ public class LicenseService {
 			}
 		}
 	}
-	
 	
 }
